@@ -1,7 +1,7 @@
 {
-  "name": "dakebl.co.uk",
-  "author": "Dale Blackburn <dale@dakebl.co.uk>",
-  "description": "Dale Blackburn | Full Stack Developer based in Brighton, UK.",
+  "name": "tayfurunal.com",
+  "author": "Tayfur Ünal <mtayfurunal@gmail.com>",
+  "description": "Tayfur Ünal | Software Developer in Istanbul",
   "version": "1.0.0",
   "scripts": {
     "build": "gatsby build",
