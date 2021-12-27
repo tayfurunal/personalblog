@@ -1,0 +1,158 @@
+---
+title: 'Kısa Kısa #II: Docker'
+date: 2020-06-06
+tags:
+  - Software Development
+  - Tool
+---
+
+## Niçin Kullanırız?
+
+- İzolasyon: Çalıştığımız işletim sisteminden izole bir container içinde ihtiyacımız olan tüm gereksinimlerini istediğimiz versiyonunu çalıştırarak kullanabiliriz.
+- Güvence: Ama localde çalışıyordu cümlesini tarihe karıştırır. Container'lar her yerde aynı şekilde çalışır.
+- Temizlik/Rahatlık: Github'dan çektiğimiz bir repoyu ayağa kaldırma gibi sıkıntıları ortadan kaldırır ve birkaç komutla çalışır hale gelebilir. Bilgisayarımızda Java 8 yüklü iken uygulama Java 11 ile çalışıyor olması gibi karşılacabileceğimiz pek çok sıkıntıdan kurtulmamızı sağlarken tek satırlık sil/yükle komutları ile işletim sistemimizi temiz tutabiliriz.
+
+---
+
+## Virtual Machine (Sanal Makine) ile Farkları
+* Container'ların içinde işletim sistemi çalışmaz, VM'nin aksine.
+* Güvenlik açısından VM daha iyi.
+* Boyut açısından container teknolojisi daha iyi. (Ayrıca bütün bir işletim sistemi yok çünkü)
+
+---
+
+
+## En Fazla Kullanılan Komutlar
+
+### Container lifecycle & debug komutları =>
+
+`docker run` : uygulamayı ayağa kaldır
+
+Not: Run komutu kullanılırken genellikle bazı tag'ler kullanılr.
+
+`sudo docker run --rm -i -t`
+
+* --rm : çalışma sonlandıktan sonra sil
+* -i, -t : interaktif ve terminal erişimine izin ver
+* -p = -p 8080:80 nginx : kendi makinemdeki 8080 portunu container'daki 80 portuna map et
+* -d : arka planda çalıştır
+* --name: takma ismi belirle
+* --restart=always : uygulama sona ererse tekrar ayağa kaldır
+
+```console
+root@~$ docker run node:10
+```
+
+```console
+root@~$ docker run --rm -i -t  node:10
+> 
+```
+
+```console
+root@~$ sudo docker run -d -p 8080:80 --restart=always --name=web nginx
+4701d1f382a47a74364c7737c0756c9b3d0fb8fa7968aac195dc168b899eee03
+```
+
+`docker rm` : durdur & sil
+
+```console
+root@~$ docker rm 752e727f7a05
+752e727f7a05
+```
+
+`docker ps`: çalışanları listele [ps -a = çalışıp bitenleri de listele]
+
+```console
+root@~$ docker ps -a
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                     PORTS               NAMES
+d159d233884c        node:10             "docker-entrypoint.s…"   3 seconds ago       Exited (0) 2 seconds ago                       mystifying_fermat
+```
+
+`docker logs` : logları takip et
+
+```console
+root@~$ docker logs -f --since 10s web
+172.17.0.1 - - [30/Jun/2020:21:55:39 +0000] "GET / HTTP/1.1" 200 612 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36" "-"
+172.17.0.1 - - [30/Jun/2020:21:55:39 +0000] "GET /favicon.ico HTTP/1.1" 404 555 "http://localhost:8080/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36" "-"
+2020/06/30 21:55:39 [error] 28#28: *1 open() "/usr/share/nginx/html/favicon.ico" failed (2: No such file or directory), client: 172.17.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "localhost:8080", referrer: "http://localhost:8080/"
+```
+
+`docker exec` : container'ın içine gir [container + command]
+
+```console
+root@~$ docker exec -i -t web bash
+root@4701d1f382a4:/# 
+```
+
+### Image komutları =>
+
+`docker build` : Dockerfile kullanarak container image'ı oluştur.
+
+Docker, Dockerfile dosyamızdaki talimatları okuyarak otomatik olarak bize docker image dosyamızı oluşturur.
+
+Örnek bir Dockerfile dosyası:
+
+```Dockerfile
+
+# Uygulamamızı çalıştırabilmek için gereksinimleri indir
+FROM node:12
+
+# Çalışma konumunu belirle
+WORKDIR /usr/src/app
+
+# Bağımlılıklar için package* dosyalarını kopyala
+COPY package*.json ./
+
+# Uygulamayı çalıştırmak için gerekli komutları yaz
+RUN npm install
+
+# Bulunduğun klasörder, çalışma klasörünü dosyaları kopyala
+COPY . .
+
+# Uygulamamızın ayağa kalkacağı port
+EXPOSE 8080
+
+# Uygulamayı başlat
+CMD [ "node", "server.js" ]
+````
+
+```console
+root@~$ docker build .
+```
+
+Docker Hub : Resmi/Resmi olmayan image'ları bulabileceğimiz ayrıca `docker build` ile oluşturmuş olduğumuz image'ları barındırabileceğimiz Github'a benzer mantıkta çalışan platform. [hub.docker.com](https://hub.docker.com/)
+
+`docker images` : image listele
+
+```console
+root@~$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+nginx               latest              2622e6cca7eb        3 weeks ago         132MB
+node                10                  e7671d9424c2        3 weeks ago         911MB
+alpine              latest              a24bb4013296        4 weeks ago         5.57MB
+hello-world         latest              fce289e99eb9        18 months ago       1.84kB
+
+```
+
+`docker rmi`: image sil
+
+`docker pull` : image download 
+
+`docker push` : image upload
+
+```console
+root@~$ docker rmi node
+root@~$ docker pull image_name
+root@~$ docker push image_name
+```
+
+`docker tag` : isim ver
+
+```console
+docker tag 0e5574283393 fedora/httpd:version1.0
+```
+---
+### Referanslar
+* [Learning Docker, Arthur Ulfeldt](https://www.linkedin.com/learning/learning-docker-2)
+* [Hızlandırılmış Container'lar ve Docker kursu, Ahmet Alp Balkan](https://www.youtube.com/playlist?list=PLe1QWkyzVMv6psIEboToi7sbcNpQlhc9c)
+* https://docs.docker.com/

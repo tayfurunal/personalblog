@@ -1,0 +1,3 @@
+User-agent: *
+
+sitemap: https://dakebl.co.uk/sitemap.xml

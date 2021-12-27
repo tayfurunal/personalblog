@@ -1,0 +1,222 @@
+---
+title: 'Kısa Kısa: SOLID'
+date: 2020-02-16
+tags:
+  - Software Development
+---
+
+## Amaç
+- Bakımı ve anlaşılması kolay kod yazmak.
+- Sistemi kolayca genişletebilmek ve varolanda değişiklik yapmak zorunda kalmadan yeni özellikler ekleyebilmek.
+---
+
+## Single Responsiblity
+Bir component'in(class, function vb.) tek bir görevi olmalıdır. Bunu fiillere benzetebiliriz bir fiil sadece bir eylemi temsil eder, kodumuz da benzer şekilde davranmalı. `copAt()` fonksiyonu sadece çöpü atmalı hazır çöpü atarken dönüşte de ekmek alsın yaklaşımı bu prensibin ihlali anlamına gelir, ekmek almak için ayrıca `ekmekAl()` fonksiyonunu oluşturmamız lazım. Ve evet `copAtVeEkmekAlVeOdanıTopla()` gibi kullanımlardan da kaçınmalıyız.
+
+## Open-Closed
+Component'in *değişime kapalı ama gelişime/genişlemeye açık* olması gerektiği anlamına gelir. Programımıza yeni bir özellik eklemek, güncelleme yapmak istediğimiz de yapacağımız bu değişiklikler için uygulamamızın farklı yerlerindeki componentlere müdahalede bulunmamamız gerekiyor.
+
+```js
+function ozelGucKullan(Karakter karakter){
+  if(karakter.tip === "buyucu"){
+    console.log("büyü yap")
+  } else if (karkater.tip === "asker" ){
+    console.log("ateş et")
+  }
+}
+```
+
+Bu kodumuza her bir yeni karakter mesela savaşçı eklemek istediğimiz de **en az bir yerde** daha değişiklik yapmamız gerekecek böyle bir yaklaşım yerine;
+
+```js
+class Buyucu{
+  function ozelGucKullan(){
+    console.log("büyü yap")
+  }
+}
+
+class Asker{
+  function ozelGucKullan(){
+    console.log("ates et")
+  }
+}
+
+class Savasci{
+  function ozelGucKullan(){
+    console.log("kılıçla vur")
+  }
+}
+```
+
+Bu şekilde genişletilebilir bir yaklaşım kullanmak bu prensibe sadık kalmamızı ve dolayısıyla işimizi kolaylaştırmamızı sağlayacaktır.
+
+```js
+else if (karkater.tip === "savascı" ){
+    console.log("kılıçla vur")
+  }
+//-----
+Savasci savascı = new Savasci()
+savascı.ozelGucKullan()
+```
+
+Hangisi daha temiz?
+
+## Liskov Substitution
+Tanımladığımız ya da kalıtım aldığımız sınıflar ismleri ile kelimenin tam anlamıyla müsemma olmalıdırlar. Bu prensibi stackoverflow'da denk geldiğim bir örnek üzerinden açıklamaya çalışacağım.
+
+```java
+class Kus{
+  public void yemekYe(){
+      System.out.println("Yemek yiyorum"); 
+    }
+  public void uc(){
+      System.out.println("Uçuyorum");
+    };
+}
+```
+
+```java
+class DeveKusu extends Kus{
+  public void uc(){
+    return new Throw("Ben uçamam");
+  };
+}
+```
+Bir kuş sınıfı tanımladık ve tüm kuşların uçabileceğini iddia ettik ve deve kuşu bir kuş olduğu için `Kus` sınıfımızdan kalıtım aldık ama bir sorun var kalıtım ile gelen `uc()` fonksiyonumuzu deve kuşu için kullanılamaz hale getirmemiz gerekiyor. Programımız çalışmaya devam edecektir ama uygulamamızın herhangi bir yerinde `Kus` sınıfından kalıtım aldığımız tüm sınıflara `uc()` emri verebiliriz bunun sonucunda ya hata alacağız ya da mantıksal problemler ile karşılaşacağız.
+
+```java
+public interface UcanKus {
+  public void uc();
+}
+
+public class Kus{
+  public void yemekYe(){
+     System.out.println("Yemek yiyorum"); 
+  }
+}
+
+public class Serce extends Kus implements UcanKus{
+  public void uc(){
+     System.out.println("Uçuyorum"); 
+  }
+}
+
+public class DeveKusu extends Kus {}
+
+```
+
+Mimarimiz bu şekilde olursa kodumuz Liskov prensibine uygun hale gelecektir çünkü Kalıtım aldığımız sınıfa istisnalar oluşturmuyoruz.
+
+Programımızın herhangi bir yerinde uçan kuşlar ile işlem yapmak istersek sadece uçabilen kuşları kabul etmemiz yeterli. `eğer kuşumuz serçe ise`, `eğer kuşumuz deve kuşu değilse` gibi kodlar yazarak da programımızı elbette çalıştırabiliriz ama o zaman da hatırlayacağınız üzere *Open-Closed* prensibine aykırı davranmış olurduk. Open-Closed ve Liskov oldukça ilişkili.
+
+```java
+public void ucur(UcanKus kus){
+  kus.uc();
+}
+```
+
+## Interface Segregation
+
+Eğer interfaceler'den implementasyon yapıldığında bir operasyon o implementasyonun içinde kullanılmayacaksa, ayrıştırılmalıdır.
+
+```java
+public interface Worker {
+  public void work();
+  public void eat();
+}
+
+public class Developer implements Worker {
+  @Override
+  public void work() {
+    System.out.println("Developer working");
+  }
+  @Override
+  public void eat() {
+    System.out.println("Developer eating");
+  }
+}
+
+public class Robot implements Worker {
+  @Override
+  public void work() {
+    System.out.println("Robot working");
+  }
+  @Override
+  public void eat() {
+    throw new UnsupportedOperationException("cannot eat");
+  }
+}
+```
+
+Yukarıdaki kullanımı incelediğimiz de `Worker` interface'inden implement edilen `Robot` sınıfında bizi istisna yakalamaya zorlayan bir durum oluşturuyor bu sorunu gidermek için bu şekilde bir yaklaşım uygulanabilir:
+
+```java
+
+public interface Eatable {
+  public void eat();
+}
+
+public interface Workable {
+  public void work();
+}
+
+public class Worker implements Workable, Eatable {
+  @Override
+  public void work() {
+    System.out.println("worker start working");
+  }
+    
+  @Override
+  public void end() {
+    System.out.println("worker end eating");
+  }
+}
+
+public class Robot implements Workable {
+  @Override
+  public void work() {
+    System.out.println("robot start working");
+  }
+}
+```
+Gördüğümüz gibi interface'leri ihtiyacımıza yönelik olarak ayırarak `Interface Segregation` prensibini yerine getirmiş olduk.
+
+
+## Dependency Inversion
+Sınıflar arası geçişlerimizin [*Loosely Coupled(Gevşek Bağlı)*](https://stackoverflow.com/a/227957) olması gerekir. Bunun nedeni uğraştığımız class'ları sürekli olarak `new` ile türetip objeler meydana getirirsek, projemizde uzun vadede yapacağımız değişiklikler bizim için içinden çıkılmaz bir hal alacaktır. Buna çözüm ise interface'ler üzerinden iletişim kurmak ve bunların instance'larını (yaygın kullanım) constructor'dan elde etmektir.
+
+Örnek üzerinden görmek gerekir ise bu kod parçasını
+
+```java
+public class AccountCreator{
+  private AccountRepository accountRepository = new AccountRepository();
+
+  public void saveAccount(AccountModel accountModel){
+    accountRepository.save(newAccount(accountModel));
+  }
+}
+```
+
+Bu hale dönüştürmektir:
+
+```java
+public class AccountCreator{
+  private IAccountRepository accountRepository;
+
+  public AccountCreator(IAccountRepository accountRepository){
+      accountRepository = accountRepository;
+  }
+  
+  public void saveAccount(AccountModel accountModel){
+      accountRepository.SaveAccount(new Account(accountModel));
+  }
+}
+
+```
+---
+### Referanslar
+* [Solid Programlama, Tarık Güney](https://www.youtube.com/playlist?list=PL_Z0TaFYSF3I7zyoHX-ubeSq_l0e2ztjm)
+* [Becoming a better developer by using the SOLID design principles, Katerina Trajchevska](https://youtu.be/rtmFCcjEgEw)
+* https://stackoverflow.com/a/44913313
+* https://eksisozluk.com/entry/72332101
+* https://eksisozluk.com/entry/99000373
